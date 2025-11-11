@@ -33,15 +33,14 @@ export default function History() {
           const localMatch = localHistory.find(h => h.taskId === video.taskId)
           
           return {
+            // Merge with local history metadata if found first
+            ...(localMatch || {}),
+            // Then override with Firebase-specific data
             taskId: video.taskId,
-            videoUrl: video.url,
-            localVideoUrl: video.url, // Firebase URL is the main URL
             filename: video.filename,
             createdAt: video.timeCreated || video.updated,
             isFromFirebase: true,
-            // Merge with local history metadata if found
-            ...(localMatch || {}),
-            // Override URLs with Firebase URL
+            // Override URLs with Firebase URL (these take precedence)
             videoUrl: video.url,
             localVideoUrl: video.url,
           }

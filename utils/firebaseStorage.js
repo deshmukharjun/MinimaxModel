@@ -95,19 +95,13 @@ async function uploadVideo(videoBuffer, filename) {
       console.warn('  This might be due to Storage rules. File uploaded but may not be publicly accessible.');
     }
 
-    // Get the public URL - try both URL formats
+    // Get the public URL using Firebase Storage API format
     const bucketName = firebaseBucket.name;
-    let publicUrl;
+    // Encode the path: videos/filename.mp4 -> videos%2Ffilename.mp4
+    const encodedPath = encodeURIComponent(`videos/${filename}`).replace(/%2F/g, '%2F');
     
-    // Try the standard format first
-    if (bucketName.includes('.appspot.com')) {
-      publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
-    } else if (bucketName.includes('.firebasestorage.app')) {
-      publicUrl = `https://${bucketName}/videos/${filename}`;
-    } else {
-      // Fallback to standard format
-      publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
-    }
+    // Use Firebase Storage API format for public URLs
+    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media`;
     
     console.log(`✓ Public URL: ${publicUrl}`);
     
@@ -172,15 +166,10 @@ async function listAllVideos() {
             const [metadata] = await file.getMetadata();
             const filename = file.name.replace('videos/', '');
             
-            // Generate public URL based on bucket format
-            let publicUrl;
-            if (bucketName.includes('.appspot.com')) {
-              publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
-            } else if (bucketName.includes('.firebasestorage.app')) {
-              publicUrl = `https://${bucketName}/videos/${filename}`;
-            } else {
-              publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
-            }
+            // Generate public URL using Firebase Storage API format
+            // Encode the path: videos/filename.mp4 -> videos%2Ffilename.mp4
+            const encodedPath = encodeURIComponent(file.name).replace(/%2F/g, '%2F');
+            const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media`;
             
             return {
               filename,
