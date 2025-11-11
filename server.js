@@ -491,21 +491,41 @@ app.post('/api/video-download', async (req, res) => {
     
     if (firebaseStorage && process.env.FIREBASE_STORAGE_BUCKET) {
       try {
-        log('Attempting to upload video to Firebase Storage...');
+        log('=== Attempting Firebase upload ===');
         log(`  Filename: ${filename}`);
         log(`  Video buffer size: ${videoBuffer.length} bytes`);
+        log(`  Firebase module: ${!!firebaseStorage}`);
+        log(`  Upload function: ${typeof firebaseStorage.uploadVideo}`);
+        
         videoUrl = await firebaseStorage.uploadVideo(videoBuffer, filename);
-        log(`✓ Video successfully uploaded to Firebase: ${videoUrl}`);
+        log(`✓✓✓ Video successfully uploaded to Firebase: ${videoUrl}`);
       } catch (firebaseError) {
-        log('✗ Firebase upload failed, falling back to local storage');
-        log(`  Error: ${firebaseError.message}`);
-        log(`  Stack: ${firebaseError.stack}`);
-        // Fall back to local storage
+        log('✗✗✗ Firebase upload FAILED, falling back to local storage');
+        log(`  Error message: ${firebaseError.message}`);
+        log(`  Error code: ${firebaseError.code || 'N/A'}`);
+        log(`  Error details: ${JSON.stringify(firebaseError, Object.getOwnPropertyNames(firebaseError))}`);
+        if (firebaseError.stack) {
+          log(`  Stack trace: ${firebaseError.stack}`);
+        }
+        
+        // Return error details in response so we can see what went wrong
+        // But still fall back to local storage
         const filepath = path.join(VIDEOS_DIR, filename);
         try {
           await fs.writeFile(filepath, videoBuffer);
           videoUrl = `/api/videos/${filename}`;
-          log(`Video saved locally: ${filepath}`);
+          log(`Video saved locally as fallback: ${filepath}`);
+          
+          // Include error in response for debugging
+          res.json({
+            success: true,
+            local_url: videoUrl,
+            filename: filename,
+            is_firebase: false,
+            firebase_error: firebaseError.message,
+            firebase_error_code: firebaseError.code,
+          });
+          return;
         } catch (localError) {
           log(`✗ Local storage also failed: ${localError.message}`);
           throw localError;
