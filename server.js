@@ -416,6 +416,11 @@ app.get('/api/video-file/:fileId', async (req, res) => {
 app.post('/api/video-download', async (req, res) => {
   log('=== Video Download Request Started ===');
   try {
+    // Validate request body
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+    
     const { download_url, task_id, file_id } = req.body;
 
     if (!download_url) {
