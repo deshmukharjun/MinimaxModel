@@ -129,5 +129,6 @@ async function deleteVideo(filename) {
 module.exports = {
   uploadVideo,
   deleteVideo,
+  initializeFirebase, // Export for testing
 };
 

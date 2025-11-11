@@ -412,6 +412,45 @@ app.get('/api/video-file/:fileId', async (req, res) => {
   }
 });
 
+// API endpoint to check Firebase configuration (for debugging)
+app.get('/api/firebase-status', async (req, res) => {
+  try {
+    const status = {
+      firebaseStorageModuleLoaded: !!firebaseStorage,
+      firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'NOT SET',
+      firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ? `SET (${process.env.FIREBASE_SERVICE_ACCOUNT.length} chars)` : 'NOT SET',
+      environment: process.env.VERCEL ? 'Vercel' : 'Local',
+      vercelEnv: process.env.VERCEL || 'false',
+    };
+    
+    // Try to initialize Firebase to see if it works
+    if (firebaseStorage && firebaseStorage.initializeFirebase) {
+      try {
+        const testBucket = firebaseStorage.initializeFirebase();
+        status.firebaseInitialized = !!testBucket;
+        if (testBucket) {
+          status.bucketName = testBucket.name;
+          status.firebaseWorking = true;
+        } else {
+          status.firebaseWorking = false;
+          status.firebaseError = 'Bucket is null after initialization';
+        }
+      } catch (error) {
+        status.firebaseError = error.message;
+        status.firebaseWorking = false;
+        status.firebaseStack = error.stack;
+      }
+    } else {
+      status.firebaseError = firebaseStorage ? 'initializeFirebase function not found' : 'firebaseStorage module not loaded';
+      status.firebaseWorking = false;
+    }
+    
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // API endpoint to download and save video (to Firebase or local storage)
 app.post('/api/video-download', async (req, res) => {
   log('=== Video Download Request Started ===');
@@ -444,10 +483,11 @@ app.post('/api/video-download', async (req, res) => {
     let videoUrl;
     
     // Try Firebase Storage first if available, otherwise use local storage
-    log('Checking Firebase configuration...');
+    log('=== Checking Firebase configuration ===');
     log(`  firebaseStorage available: ${!!firebaseStorage}`);
     log(`  FIREBASE_STORAGE_BUCKET: ${process.env.FIREBASE_STORAGE_BUCKET || 'NOT SET'}`);
     log(`  FIREBASE_SERVICE_ACCOUNT: ${process.env.FIREBASE_SERVICE_ACCOUNT ? 'SET (' + process.env.FIREBASE_SERVICE_ACCOUNT.length + ' chars)' : 'NOT SET'}`);
+    log(`  Environment: ${process.env.VERCEL ? 'Vercel' : 'Local'}`);
     
     if (firebaseStorage && process.env.FIREBASE_STORAGE_BUCKET) {
       try {
