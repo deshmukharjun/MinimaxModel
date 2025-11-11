@@ -428,98 +428,115 @@ export default function VideoGenerator() {
   const availableModels = MODELS[activeMode] || []
   const availableResolutions = RESOLUTIONS[formData.model] || ['720P']
 
+  const removeImage = (type) => {
+    if (type === 'first') {
+      setFormData({ ...formData, first_frame_image: '' })
+      setImagePreview(null)
+      setImageSource('upload')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } else if (type === 'last') {
+      setFormData({ ...formData, last_frame_image: '' })
+      setLastImagePreview(null)
+      setLastImageSource('upload')
+      if (lastFileInputRef.current) lastFileInputRef.current.value = ''
+    } else if (type === 'subject') {
+      setFormData({ ...formData, subject_reference: [] })
+      setSubjectImagePreview(null)
+      setSubjectImageSource('upload')
+      if (subjectFileInputRef.current) subjectFileInputRef.current.value = ''
+    }
+  }
+
   const renderImageInput = (type, preview, setPreview, imageSource, setImageSource, fileInputRef, label, required = false) => {
     return (
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-3">
-          {label} {required && '*'}
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
         
-        <div className="flex space-x-2 mb-4">
-          <button
-            onClick={() => {
-              setImageSource('upload')
-              if (type === 'first') {
-                setFormData({ ...formData, first_frame_image: '' })
-                setPreview(null)
-              } else if (type === 'last') {
-                setFormData({ ...formData, last_frame_image: '' })
-                setPreview(null)
-              } else if (type === 'subject') {
-                setFormData({ ...formData, subject_reference: [] })
-                setPreview(null)
-              }
-            }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              imageSource === 'upload'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Upload Image
-          </button>
-          <button
-            onClick={() => {
-              setImageSource('url')
-              if (type === 'first') {
-                setFormData({ ...formData, first_frame_image: '' })
-                setPreview(null)
-              } else if (type === 'last') {
-                setFormData({ ...formData, last_frame_image: '' })
-                setPreview(null)
-              } else if (type === 'subject') {
-                setFormData({ ...formData, subject_reference: [] })
-                setPreview(null)
-              }
-            }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              imageSource === 'url'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Image URL
-          </button>
-        </div>
+        {/* Only show upload/URL selector when no image is uploaded */}
+        {!preview && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => setImageSource('upload')}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-all text-sm sm:text-base ${
+                  imageSource === 'upload'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Upload Image
+              </button>
+              <button
+                onClick={() => setImageSource('url')}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-all text-sm sm:text-base ${
+                  imageSource === 'url'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Image URL
+              </button>
+            </div>
 
-        {imageSource === 'upload' ? (
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
-              onChange={(e) => handleImageUpload(e, type)}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 transition-colors text-gray-600 hover:text-blue-600"
-            >
-              <div className="flex flex-col items-center">
-                <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="font-medium">Click to upload or drag and drop</span>
-                <span className="text-sm">JPG, PNG, WebP (max 20MB)</span>
+            {imageSource === 'upload' ? (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={(e) => handleImageUpload(e, type)}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 transition-all text-gray-600 hover:text-blue-600 active:bg-gray-50"
+                >
+                  <div className="flex flex-col items-center">
+                    <svg className="w-10 h-10 sm:w-12 sm:h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium text-sm sm:text-base mb-1">Click to upload or drag and drop</span>
+                    <span className="text-xs sm:text-sm text-gray-500">JPG, PNG, WebP (max 20MB)</span>
+                  </div>
+                </button>
               </div>
-            </button>
-          </div>
-        ) : (
-          <input
-            type="url"
-            placeholder="https://example.com/image.jpg"
-            onChange={(e) => handleImageUrlInput(e, type)}
-            className="input-field"
-          />
+            ) : (
+              <input
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                onChange={(e) => handleImageUrlInput(e, type)}
+                className="input-field text-sm sm:text-base"
+              />
+            )}
+          </>
         )}
 
+        {/* Show image preview with remove button */}
         {preview && (
-          <div className="mt-4 rounded-xl overflow-hidden border-2 border-gray-200">
+          <div className="mt-4 relative rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg group">
             <img
               src={preview}
               alt="Preview"
-              className="w-full h-64 object-cover"
+              className="w-full h-48 sm:h-64 object-cover"
             />
+            {/* Remove button - top right corner */}
+            <button
+              onClick={() => removeImage(type)}
+              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all transform hover:scale-110 active:scale-95 opacity-90 group-hover:opacity-100"
+              aria-label="Remove image"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* Overlay hint on hover */}
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+              <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity text-sm sm:text-base">
+                Click X to remove
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -527,19 +544,19 @@ export default function VideoGenerator() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-6">
       {/* Main Card */}
       <div className="card">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Video Generation</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">Video Generation</h2>
 
-        {/* Mode Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <div className="flex space-x-1">
+        {/* Mode Tabs - Mobile responsive */}
+        <div className="mb-4 sm:mb-6 border-b border-gray-200 overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+          <div className="flex space-x-1 min-w-max sm:min-w-0">
             {MODES.map((mode) => (
               <button
                 key={mode.value}
                 onClick={() => handleModeChange(mode.value)}
-                className={`px-6 py-3 font-medium transition-all ${
+                className={`px-3 sm:px-6 py-2.5 sm:py-3 font-medium transition-all text-sm sm:text-base whitespace-nowrap ${
                   activeMode === mode.value
                     ? 'border-b-2 border-blue-600 text-blue-600'
                     : 'text-gray-600 hover:text-gray-800'
@@ -554,19 +571,19 @@ export default function VideoGenerator() {
         {/* Text-to-Video Mode */}
         {activeMode === 'text-to-video' && (
           <>
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Video Description *
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+                Video Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Describe the video you want to generate... (e.g., A tiktok dancer is dancing on a drone, doing flips and tricks.)"
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 rows={4}
-                className="input-field"
+                className="input-field text-sm sm:text-base resize-y"
                 maxLength={2000}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1.5">
                 {formData.prompt.length}/2000 characters
               </p>
             </div>
@@ -577,19 +594,19 @@ export default function VideoGenerator() {
         {activeMode === 'image-to-video' && (
           <>
             {renderImageInput('first', imagePreview, setImagePreview, imageSource, setImageSource, fileInputRef, 'Starting Image', true)}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Video Description (Optional)
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+                Video Description <span className="text-gray-500 text-xs">(Optional)</span>
               </label>
               <textarea
                 placeholder="Describe how the scene evolves from the starting image... (e.g., Contemporary dance, the people in the picture are performing contemporary dance.)"
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 rows={4}
-                className="input-field"
+                className="input-field text-sm sm:text-base resize-y"
                 maxLength={2000}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1.5">
                 {formData.prompt.length}/2000 characters
               </p>
             </div>
@@ -601,19 +618,19 @@ export default function VideoGenerator() {
           <>
             {renderImageInput('first', imagePreview, setImagePreview, imageSource, setImageSource, fileInputRef, 'First Frame Image', true)}
             {renderImageInput('last', lastImagePreview, setLastImagePreview, lastImageSource, setLastImageSource, lastFileInputRef, 'Last Frame Image', true)}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Video Description (Optional)
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+                Video Description <span className="text-gray-500 text-xs">(Optional)</span>
               </label>
               <textarea
                 placeholder="Describe the transformation... (e.g., A little girl grow up.)"
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 rows={4}
-                className="input-field"
+                className="input-field text-sm sm:text-base resize-y"
                 maxLength={2000}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1.5">
                 {formData.prompt.length}/2000 characters
               </p>
             </div>
@@ -624,19 +641,19 @@ export default function VideoGenerator() {
         {activeMode === 'subject-reference' && (
           <>
             {renderImageInput('subject', subjectImagePreview, setSubjectImagePreview, subjectImageSource, setSubjectImageSource, subjectFileInputRef, 'Subject Reference Image (Face Photo)', true)}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Video Description *
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+                Video Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Describe the video with the subject... (e.g., On an overcast day, in an ancient cobbled alleyway, the model is dressed in a brown corduroy jacket...)"
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 rows={6}
-                className="input-field"
+                className="input-field text-sm sm:text-base resize-y"
                 maxLength={2000}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1.5">
                 {formData.prompt.length}/2000 characters
               </p>
             </div>
@@ -644,9 +661,9 @@ export default function VideoGenerator() {
         )}
 
         {/* Common Fields */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Model *
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+            Model <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.model}
@@ -658,7 +675,7 @@ export default function VideoGenerator() {
                 resolution: RESOLUTIONS[newModel]?.[0] || '720P',
               })
             }}
-            className="input-field"
+            className="input-field text-sm sm:text-base"
           >
             {availableModels.map((model) => (
               <option key={model.value} value={model.value}>
@@ -668,14 +685,14 @@ export default function VideoGenerator() {
           </select>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
             Resolution
           </label>
           <select
             value={formData.resolution}
             onChange={(e) => setFormData({ ...formData, resolution: e.target.value })}
-            className="input-field"
+            className="input-field text-sm sm:text-base"
           >
             {availableResolutions.map((res) => (
               <option key={res} value={res}>
@@ -685,8 +702,8 @@ export default function VideoGenerator() {
           </select>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
             Duration (seconds)
           </label>
           <input
@@ -695,39 +712,39 @@ export default function VideoGenerator() {
             max="10"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-            className="input-field"
+            className="input-field text-sm sm:text-base"
           />
         </div>
 
         {/* Options */}
-        <div className="mb-6 space-y-3">
-          <label className="flex items-center space-x-3 cursor-pointer">
+        <div className="mb-4 sm:mb-6 space-y-3">
+          <label className="flex items-center space-x-3 cursor-pointer py-2 -mx-2 px-2 rounded-lg hover:bg-gray-50 transition-colors">
             <input
               type="checkbox"
               checked={formData.prompt_optimizer}
               onChange={(e) => setFormData({ ...formData, prompt_optimizer: e.target.checked })}
-              className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+              className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
             />
-            <span className="text-sm font-medium text-gray-700">Enable Prompt Optimizer</span>
+            <span className="text-sm sm:text-base font-medium text-gray-700">Enable Prompt Optimizer</span>
           </label>
           {(formData.model === 'MiniMax-Hailuo-2.3' || 
             formData.model === 'MiniMax-Hailuo-2.3-Fast' || 
             formData.model === 'MiniMax-Hailuo-02') && (
-            <label className="flex items-center space-x-3 cursor-pointer">
+            <label className="flex items-center space-x-3 cursor-pointer py-2 -mx-2 px-2 rounded-lg hover:bg-gray-50 transition-colors">
               <input
                 type="checkbox"
                 checked={formData.fast_pretreatment}
                 onChange={(e) => setFormData({ ...formData, fast_pretreatment: e.target.checked })}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
               />
-              <span className="text-sm font-medium text-gray-700">Fast Pretreatment</span>
+              <span className="text-sm sm:text-base font-medium text-gray-700">Fast Pretreatment</span>
             </label>
           )}
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm sm:text-base">
             {error}
           </div>
         )}
@@ -736,7 +753,7 @@ export default function VideoGenerator() {
         <button
           onClick={generateVideo}
           disabled={isGenerating}
-          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          className="btn-primary w-full text-base sm:text-lg py-3.5 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isGenerating ? (
             <span className="flex items-center justify-center">
@@ -755,13 +772,13 @@ export default function VideoGenerator() {
       {/* Status Card */}
       {taskId && (
         <div className="card animate-fade-in">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Generation Status</h3>
-          <div className="flex items-center space-x-4 mb-4">
-            <span className="text-sm text-gray-600">Task ID:</span>
-            <code className="px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono">{taskId}</code>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Generation Status</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+            <span className="text-xs sm:text-sm text-gray-600">Task ID:</span>
+            <code className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs sm:text-sm font-mono break-all">{taskId}</code>
           </div>
           {statusDisplay && (
-            <div className={`inline-flex items-center px-4 py-2 rounded-lg ${getStatusColor()}`}>
+            <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm sm:text-base ${getStatusColor()}`}>
               <span className="font-semibold">{statusDisplay}</span>
             </div>
           )}
@@ -771,9 +788,13 @@ export default function VideoGenerator() {
       {/* Video Result */}
       {(videoUrl || localVideoUrl) && (
         <div className="card animate-fade-in">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
             Generated Video
-            {videoDimensions && ` (${videoDimensions.width}x${videoDimensions.height})`}
+            {videoDimensions && (
+              <span className="text-sm sm:text-base font-normal text-gray-600 ml-2">
+                ({videoDimensions.width}x{videoDimensions.height})
+              </span>
+            )}
           </h3>
           <div className="rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg">
             <video
@@ -785,12 +806,12 @@ export default function VideoGenerator() {
               Your browser does not support the video tag.
             </video>
           </div>
-          <div className="mt-4 flex space-x-3">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
             {localVideoUrl && (
               <a
                 href={localVideoUrl}
                 download
-                className="btn-secondary inline-flex items-center space-x-2"
+                className="btn-secondary inline-flex items-center justify-center space-x-2 text-sm sm:text-base"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -803,7 +824,7 @@ export default function VideoGenerator() {
                 href={videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary inline-flex items-center space-x-2"
+                className="btn-secondary inline-flex items-center justify-center space-x-2 text-sm sm:text-base"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

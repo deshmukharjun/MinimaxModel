@@ -134,12 +134,12 @@ export default function History() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800">Generation History</h2>
-          <p className="text-gray-500 mt-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Generation History</h2>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">
             {allVideosList.length} video{allVideosList.length !== 1 ? 's' : ''} total
             {firebaseVideos.length > 0 && (
               <span className="ml-2 text-blue-600">
@@ -148,20 +148,20 @@ export default function History() {
             )}
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={loadFirebaseVideos}
-            className="btn-secondary inline-flex items-center space-x-2"
+            className="btn-secondary inline-flex items-center space-x-2 text-sm sm:text-base px-3 sm:px-6 py-2 sm:py-3"
             title="Refresh videos from Firebase"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             <span>Refresh</span>
           </button>
           <button
             onClick={handleClearHistory}
-            className="btn-secondary text-red-600 border-red-600 hover:bg-red-50"
+            className="btn-secondary text-red-600 border-red-600 hover:bg-red-50 text-sm sm:text-base px-3 sm:px-6 py-2 sm:py-3"
           >
             Clear Local History
           </button>
@@ -169,7 +169,7 @@ export default function History() {
       </div>
 
       {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {allVideosList.map((item, index) => (
           <div
             key={item.taskId || index}
@@ -210,13 +210,13 @@ export default function History() {
 
             {/* Info */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-gray-800 truncate">
+              <h3 className="font-semibold text-gray-800 truncate text-sm sm:text-base">
                 {item.prompt || 'No description'}
               </h3>
-              <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs sm:text-sm text-gray-500">
                 <span>{formatDate(item.createdAt)}</span>
                 {item.dimensions && (
-                  <span className="px-2 py-1 bg-gray-100 rounded">
+                  <span className="px-2 py-1 bg-gray-100 rounded text-xs sm:text-sm">
                     {item.dimensions.width}x{item.dimensions.height}
                   </span>
                 )}
@@ -233,14 +233,15 @@ export default function History() {
           onClick={() => setSelectedVideo(null)}
         >
           <div
-            className="card max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="card max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4 sm:mx-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">Video Details</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Video Details</h3>
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 hover:text-gray-700 transition-colors p-2 -mr-2"
+                aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -292,12 +293,12 @@ export default function History() {
                 </div>
               )}
               {(selectedVideo.videoUrl || selectedVideo.localVideoUrl) && (
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   {selectedVideo.localVideoUrl && (
                     <a
                       href={selectedVideo.localVideoUrl}
                       download
-                      className="btn-primary inline-flex items-center space-x-2"
+                      className="btn-primary inline-flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -310,7 +311,7 @@ export default function History() {
                       href={selectedVideo.videoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-secondary inline-flex items-center space-x-2"
+                      className="btn-secondary inline-flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
