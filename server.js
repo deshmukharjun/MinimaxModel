@@ -6,14 +6,6 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 require('dotenv').config();
 
-// Import Firebase Storage utility (optional - only if Firebase is configured)
-let firebaseStorage = null;
-try {
-  firebaseStorage = require('./utils/firebaseStorage');
-} catch (error) {
-  log('Firebase Storage not configured, using local storage');
-}
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -25,6 +17,14 @@ const log = (message, data = null) => {
     console.log(JSON.stringify(data, null, 2));
   }
 };
+
+// Import Firebase Storage utility (optional - only if Firebase is configured)
+let firebaseStorage = null;
+try {
+  firebaseStorage = require('./utils/firebaseStorage');
+} catch (error) {
+  log('Firebase Storage not configured, using local storage');
+}
 
 // In-memory storage for task statuses (in production, use a database)
 const taskStatuses = new Map();
