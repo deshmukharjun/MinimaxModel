@@ -243,6 +243,7 @@ export default function VideoGenerator() {
 
   const downloadAndSaveVideo = async (downloadUrl, taskId, fileId) => {
     try {
+      console.log('Starting video download and storage...')
       const response = await fetch('/api/video-download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,7 +261,14 @@ export default function VideoGenerator() {
       }
 
       const data = await response.json()
+      console.log('Video download response:', data)
+      
       if (data.local_url) {
+        if (data.is_firebase) {
+          console.log('✓ Video uploaded to Firebase Storage:', data.local_url)
+        } else {
+          console.log('⚠ Video saved locally (Firebase not configured or failed):', data.local_url)
+        }
         setLocalVideoUrl(data.local_url)
         return data.local_url
       }
