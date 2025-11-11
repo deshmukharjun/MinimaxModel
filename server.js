@@ -421,6 +421,7 @@ app.get('/api/firebase-status', async (req, res) => {
       firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ? `SET (${process.env.FIREBASE_SERVICE_ACCOUNT.length} chars)` : 'NOT SET',
       environment: process.env.VERCEL ? 'Vercel' : 'Local',
       vercelEnv: process.env.VERCEL || 'false',
+      note: 'Try using minimaxstorage-cd2d8.firebasestorage.app if .appspot.com format fails',
     };
     
     // Try to initialize Firebase to see if it works
