@@ -24,17 +24,28 @@ export default function History() {
       const data = await response.json()
       
       if (data.success && data.videos) {
+        // Get current local history to match metadata
+        const localHistory = getHistory()
+        
         // Convert Firebase videos to history format
-        const formattedVideos = data.videos.map(video => ({
-          taskId: video.taskId,
-          videoUrl: video.url,
-          localVideoUrl: video.url, // Firebase URL is the main URL
-          filename: video.filename,
-          createdAt: video.timeCreated || video.updated,
-          isFromFirebase: true,
+        const formattedVideos = data.videos.map(video => {
           // Try to match with local history for additional metadata
-          ...(history.find(h => h.taskId === video.taskId) || {}),
-        }))
+          const localMatch = localHistory.find(h => h.taskId === video.taskId)
+          
+          return {
+            taskId: video.taskId,
+            videoUrl: video.url,
+            localVideoUrl: video.url, // Firebase URL is the main URL
+            filename: video.filename,
+            createdAt: video.timeCreated || video.updated,
+            isFromFirebase: true,
+            // Merge with local history metadata if found
+            ...(localMatch || {}),
+            // Override URLs with Firebase URL
+            videoUrl: video.url,
+            localVideoUrl: video.url,
+          }
+        })
         
         setFirebaseVideos(formattedVideos)
         console.log(`Loaded ${formattedVideos.length} videos from Firebase Storage`)
