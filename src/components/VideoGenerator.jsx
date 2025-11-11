@@ -217,11 +217,18 @@ export default function VideoGenerator() {
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate video')
+        const errorText = await response.text()
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          throw new Error(`Server error ${response.status}: ${errorText || 'Unknown error'}`)
+        }
+        throw new Error(errorData.error || `Server error ${response.status}`)
       }
+
+      const data = await response.json()
 
       setTaskId(data.task_id)
       setStatus('processing')
