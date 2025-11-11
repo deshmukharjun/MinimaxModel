@@ -21,11 +21,17 @@ const log = (message, data = null) => {
 // In-memory storage for task statuses (in production, use a database)
 const taskStatuses = new Map();
 
-// Create videos directory if it doesn't exist
-const VIDEOS_DIR = path.join(__dirname, 'videos');
+// Create videos directory if it doesn't exist (skip on Vercel - use /tmp instead)
+const VIDEOS_DIR = process.env.VERCEL === '1' 
+  ? path.join('/tmp', 'videos')
+  : path.join(__dirname, 'videos');
 if (!fsSync.existsSync(VIDEOS_DIR)) {
-  fsSync.mkdirSync(VIDEOS_DIR, { recursive: true });
-  log('Created videos directory:', VIDEOS_DIR);
+  try {
+    fsSync.mkdirSync(VIDEOS_DIR, { recursive: true });
+    log('Created videos directory:', VIDEOS_DIR);
+  } catch (error) {
+    log('Warning: Could not create videos directory:', error.message);
+  }
 }
 
 // Check environment variables on startup
@@ -679,8 +685,9 @@ app.get('/api/video-generation/:taskId', async (req, res) => {
   }
 });
 
-// Serve static files from public directory (React build)
-app.use(express.static('public'));
+// Serve static files from dist directory (React build) - use dist for Vercel, public for local
+const staticDir = fsSync.existsSync(path.join(__dirname, 'dist')) ? 'dist' : 'public';
+app.use(express.static(staticDir));
 
 // Serve React app for all non-API routes (must be last)
 app.get('*', (req, res) => {
@@ -689,12 +696,19 @@ app.get('*', (req, res) => {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   // Serve index.html for React app
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, staticDir, 'index.html');
+  res.sendFile(indexPath);
 });
 
-app.listen(PORT, () => {
-  log(`=== Server Started Successfully ===`);
-  log(`Server running on http://localhost:${PORT}`);
-  log('Ready to accept requests');
-});
+// Only start server if not in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    log(`=== Server Started Successfully ===`);
+    log(`Server running on http://localhost:${PORT}`);
+    log('Ready to accept requests');
+  });
+}
+
+// Export for Vercel serverless functions
+module.exports = app;
 
