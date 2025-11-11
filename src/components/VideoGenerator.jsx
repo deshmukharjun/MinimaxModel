@@ -246,13 +246,22 @@ export default function VideoGenerator() {
         }),
       })
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Video download failed:', response.status, errorText)
+        return null
+      }
+
       const data = await response.json()
-      if (response.ok && data.local_url) {
+      if (data.local_url) {
         setLocalVideoUrl(data.local_url)
         return data.local_url
       }
     } catch (err) {
       console.error('Error downloading video locally:', err)
+      if (err.message && err.message.includes('JSON')) {
+        console.error('JSON parsing error - response might be invalid')
+      }
     }
     return null
   }
@@ -265,11 +274,19 @@ export default function VideoGenerator() {
     statusCheckIntervalRef.current = setInterval(async () => {
       try {
         const response = await fetch(`/api/video-generation/${taskId}`)
-        const data = await response.json()
-
+        
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to check status')
+          const errorText = await response.text()
+          let errorData
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            throw new Error(`Status ${response.status}: ${errorText}`)
+          }
+          throw new Error(errorData.error || 'Failed to check status')
         }
+
+        const data = await response.json()
 
         const currentStatus = (data.status || '').toLowerCase()
         setStatus(currentStatus)
