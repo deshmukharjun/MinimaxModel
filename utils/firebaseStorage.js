@@ -34,9 +34,13 @@ function initializeFirebase() {
         });
         bucket = admin.storage().bucket();
         isInitialized = true;
-        console.log('Firebase initialized successfully with service account');
+        console.log('✓ Firebase initialized successfully with service account');
+        console.log(`  Storage bucket: ${process.env.FIREBASE_STORAGE_BUCKET}`);
+        console.log(`  Project ID: ${serviceAccount.project_id}`);
       } else {
-        console.warn('Firebase not configured - missing FIREBASE_SERVICE_ACCOUNT or FIREBASE_STORAGE_BUCKET');
+        console.warn('⚠ Firebase not configured');
+        console.warn(`  FIREBASE_SERVICE_ACCOUNT: ${process.env.FIREBASE_SERVICE_ACCOUNT ? 'SET' : 'NOT SET'}`);
+        console.warn(`  FIREBASE_STORAGE_BUCKET: ${process.env.FIREBASE_STORAGE_BUCKET || 'NOT SET'}`);
         isInitialized = true; // Mark as initialized to prevent retries
       }
     } catch (error) {
@@ -60,31 +64,44 @@ function initializeFirebase() {
  */
 async function uploadVideo(videoBuffer, filename) {
   try {
+    console.log(`Starting Firebase upload for: ${filename}`);
     const firebaseBucket = initializeFirebase();
     
     if (!firebaseBucket) {
-      throw new Error('Firebase Storage not initialized');
+      throw new Error('Firebase Storage not initialized - check environment variables');
     }
 
+    console.log(`Using bucket: ${firebaseBucket.name}`);
     const file = firebaseBucket.file(`videos/${filename}`);
+    console.log(`Uploading to path: videos/${filename}`);
     
     // Upload the file
+    console.log(`Uploading ${videoBuffer.length} bytes...`);
     await file.save(videoBuffer, {
       metadata: {
         contentType: 'video/mp4',
         cacheControl: 'public, max-age=31536000',
       },
     });
+    console.log('✓ File uploaded successfully');
 
     // Make the file publicly accessible
+    console.log('Making file publicly accessible...');
     await file.makePublic();
+    console.log('✓ File is now public');
 
     // Get the public URL
     const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/videos/${filename}`;
+    console.log(`✓ Public URL: ${publicUrl}`);
     
     return publicUrl;
   } catch (error) {
-    console.error('Error uploading video to Firebase:', error);
+    console.error('✗ Error uploading video to Firebase:');
+    console.error(`  Message: ${error.message}`);
+    console.error(`  Code: ${error.code || 'N/A'}`);
+    if (error.stack) {
+      console.error(`  Stack: ${error.stack}`);
+    }
     throw error;
   }
 }
