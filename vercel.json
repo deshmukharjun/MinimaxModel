@@ -4,14 +4,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/video-generation",
-      "destination": "/api/video-generation"
-    },
-    {
-      "source": "/api/video-generation/:taskId",
-      "destination": "/api/video-generation/:taskId"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api"
     },

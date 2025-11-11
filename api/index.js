@@ -3,37 +3,45 @@ const app = require('../server.js');
 
 module.exports = async (req, res) => {
   // Vercel routes all /api/* requests to this function
-  // The original URL path is preserved in req.url
-  // We need to ensure Express sees the full path including /api
+  // We need to preserve the original URL path
   
-  // Get the original path from the request
-  const originalUrl = req.url || req.path || '/';
+  // Get the original URL from various possible sources
+  let originalPath = req.url || req.path;
   
-  // Vercel might strip /api, so check if we need to add it back
-  // The rewrite sends /api/* to /api, so req.url might be just the path after /api
-  // We need to reconstruct the full path
-  let fullPath = originalUrl;
-  
-  // If the path doesn't start with /api, it means Vercel stripped it
-  // We need to get it from the original request
-  if (!fullPath.startsWith('/api')) {
-    // Try to get from query or reconstruct
-    // Vercel passes the original path in different ways
-    const queryPath = req.query.path || req.query.url;
-    if (queryPath) {
-      fullPath = queryPath.startsWith('/') ? queryPath : '/' + queryPath;
+  // If Vercel stripped /api, we need to reconstruct it
+  // Check if the path already includes /api
+  if (!originalPath.startsWith('/api')) {
+    // Try to get from headers or query
+    const xPath = req.headers['x-vercel-path'] || req.headers['x-path'];
+    if (xPath) {
+      originalPath = xPath;
     } else {
-      // Reconstruct from the original URL
-      fullPath = '/api' + (originalUrl.startsWith('/') ? originalUrl : '/' + originalUrl);
+      // Reconstruct: Vercel sends /api/* to /api, so req.url might be the path after /api
+      // We need to check the original request
+      const originalUrl = req.headers['x-vercel-original-url'] || req.headers['x-original-url'];
+      if (originalUrl) {
+        // Extract path from full URL
+        try {
+          const url = new URL(originalUrl);
+          originalPath = url.pathname;
+        } catch {
+          originalPath = '/api' + (originalPath.startsWith('/') ? originalPath : '/' + originalPath);
+        }
+      } else {
+        // Last resort: reconstruct assuming /api was stripped
+        originalPath = '/api' + (originalPath.startsWith('/') ? originalPath : '/' + originalPath);
+      }
     }
   }
   
-  // Update the request URL and path for Express
-  req.url = fullPath;
-  req.path = fullPath;
+  // Update request for Express
+  req.url = originalPath;
+  req.path = originalPath;
   
-  // Also preserve the original method
-  req.method = req.method || 'GET';
+  // Ensure method is preserved
+  if (req.method) {
+    req.method = req.method;
+  }
   
   return app(req, res);
 };
