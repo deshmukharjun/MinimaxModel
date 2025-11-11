@@ -65,6 +65,7 @@ export default function VideoGenerator() {
   const [taskId, setTaskId] = useState(null)
   const [status, setStatus] = useState(null)
   const [statusDisplay, setStatusDisplay] = useState('')
+  const [loadingMessage, setLoadingMessage] = useState('')
   const [videoUrl, setVideoUrl] = useState(null)
   const [localVideoUrl, setLocalVideoUrl] = useState(null)
   const [videoDimensions, setVideoDimensions] = useState(null)
@@ -204,6 +205,7 @@ export default function VideoGenerator() {
     setTaskId(null)
     setStatus(null)
     setStatusDisplay('')
+    setLoadingMessage('')
     setVideoUrl(null)
     setLocalVideoUrl(null)
 
@@ -233,6 +235,15 @@ export default function VideoGenerator() {
       setTaskId(data.task_id)
       setStatus('processing')
       setStatusDisplay('Preparing')
+      
+      // Set initial loading message based on mode
+      if (activeMode === 'text-to-video') {
+        setLoadingMessage('Minimax is analyzing your text...')
+      } else if (activeMode === 'image-to-video' || activeMode === 'first-last-frame' || activeMode === 'subject-reference') {
+        setLoadingMessage('Minimax is checking out your picture...')
+      } else {
+        setLoadingMessage('Minimax is working on your video...')
+      }
       
       startStatusCheck(data.task_id)
     } catch (err) {
@@ -306,6 +317,21 @@ export default function VideoGenerator() {
         const currentStatus = (data.status || '').toLowerCase()
         setStatus(currentStatus)
         setStatusDisplay(data.status || currentStatus)
+        
+        // Update loading message based on status
+        if (currentStatus === 'processing' || currentStatus === 'preparing') {
+          if (activeMode === 'text-to-video') {
+            setLoadingMessage('Minimax is analyzing your text...')
+          } else if (activeMode === 'image-to-video' || activeMode === 'first-last-frame' || activeMode === 'subject-reference') {
+            setLoadingMessage('Minimax is checking out your picture...')
+          } else {
+            setLoadingMessage('Minimax is working on your video...')
+          }
+        } else if (currentStatus === 'generating' || currentStatus === 'rendering') {
+          setLoadingMessage('Minimax is creating your video...')
+        } else if (currentStatus === 'success') {
+          setLoadingMessage('Video ready!')
+        }
 
         if (currentStatus === 'success') {
           clearInterval(statusCheckIntervalRef.current)
@@ -761,7 +787,7 @@ export default function VideoGenerator() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Generating...
+              {loadingMessage || (activeMode === 'text-to-video' ? 'Minimax is analyzing your text...' : 'Minimax is checking out your picture...')}
             </span>
           ) : (
             'Generate Video'
@@ -777,6 +803,11 @@ export default function VideoGenerator() {
             <span className="text-xs sm:text-sm text-gray-600">Task ID:</span>
             <code className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs sm:text-sm font-mono break-all">{taskId}</code>
           </div>
+          {loadingMessage && status !== 'success' && (
+            <div className="mb-3 sm:mb-4">
+              <p className="text-sm sm:text-base text-gray-700 font-medium">{loadingMessage}</p>
+            </div>
+          )}
           {statusDisplay && (
             <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm sm:text-base ${getStatusColor()}`}>
               <span className="font-semibold">{statusDisplay}</span>
