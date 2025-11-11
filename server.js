@@ -6,6 +6,14 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 require('dotenv').config();
 
+// Import Firebase Storage utility (optional - only if Firebase is configured)
+let firebaseStorage = null;
+try {
+  firebaseStorage = require('./utils/firebaseStorage');
+} catch (error) {
+  log('Firebase Storage not configured, using local storage');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -404,7 +412,7 @@ app.get('/api/video-file/:fileId', async (req, res) => {
   }
 });
 
-// API endpoint to download and save video locally
+// API endpoint to download and save video (to Firebase or local storage)
 app.post('/api/video-download', async (req, res) => {
   log('=== Video Download Request Started ===');
   try {
@@ -426,19 +434,37 @@ app.post('/api/video-download', async (req, res) => {
 
     // Generate filename
     const filename = `${task_id || file_id || Date.now()}.mp4`;
-    const filepath = path.join(VIDEOS_DIR, filename);
+    const videoBuffer = Buffer.from(videoResponse.data);
 
-    // Save video to local storage
-    await fs.writeFile(filepath, videoResponse.data);
-    log(`Video saved locally: ${filepath}`);
+    let videoUrl;
+    
+    // Try Firebase Storage first if available, otherwise use local storage
+    if (firebaseStorage && process.env.FIREBASE_STORAGE_BUCKET) {
+      try {
+        log('Uploading video to Firebase Storage...');
+        videoUrl = await firebaseStorage.uploadVideo(videoBuffer, filename);
+        log(`Video uploaded to Firebase: ${videoUrl}`);
+      } catch (firebaseError) {
+        log('Firebase upload failed, falling back to local storage:', firebaseError.message);
+        // Fall back to local storage
+        const filepath = path.join(VIDEOS_DIR, filename);
+        await fs.writeFile(filepath, videoBuffer);
+        videoUrl = `/api/videos/${filename}`;
+        log(`Video saved locally: ${filepath}`);
+      }
+    } else {
+      // Use local storage
+      const filepath = path.join(VIDEOS_DIR, filename);
+      await fs.writeFile(filepath, videoBuffer);
+      videoUrl = `/api/videos/${filename}`;
+      log(`Video saved locally: ${filepath}`);
+    }
 
-    // Return local file path
-    const localUrl = `/api/videos/${filename}`;
     res.json({
       success: true,
-      local_url: localUrl,
+      local_url: videoUrl,
       filename: filename,
-      filepath: filepath
+      is_firebase: videoUrl.startsWith('http')
     });
   } catch (error) {
     log('Error downloading video:', error);
