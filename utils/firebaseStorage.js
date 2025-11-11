@@ -87,11 +87,28 @@ async function uploadVideo(videoBuffer, filename) {
 
     // Make the file publicly accessible
     console.log('Making file publicly accessible...');
-    await file.makePublic();
-    console.log('✓ File is now public');
+    try {
+      await file.makePublic();
+      console.log('✓ File is now public');
+    } catch (makePublicError) {
+      console.warn('⚠ Warning: Could not make file public:', makePublicError.message);
+      console.warn('  This might be due to Storage rules. File uploaded but may not be publicly accessible.');
+    }
 
-    // Get the public URL
-    const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/videos/${filename}`;
+    // Get the public URL - try both URL formats
+    const bucketName = firebaseBucket.name;
+    let publicUrl;
+    
+    // Try the standard format first
+    if (bucketName.includes('.appspot.com')) {
+      publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
+    } else if (bucketName.includes('.firebasestorage.app')) {
+      publicUrl = `https://${bucketName}/videos/${filename}`;
+    } else {
+      // Fallback to standard format
+      publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
+    }
+    
     console.log(`✓ Public URL: ${publicUrl}`);
     
     return publicUrl;
@@ -102,6 +119,27 @@ async function uploadVideo(videoBuffer, filename) {
     if (error.stack) {
       console.error(`  Stack: ${error.stack}`);
     }
+    throw error;
+  }
+}
+
+/**
+ * Make an existing file public (useful for files uploaded before makePublic was called)
+ * @param {string} filename - Filename to make public
+ */
+async function makeVideoPublic(filename) {
+  try {
+    const firebaseBucket = initializeFirebase();
+    
+    if (!firebaseBucket) {
+      throw new Error('Firebase Storage not initialized');
+    }
+
+    const file = firebaseBucket.file(`videos/${filename}`);
+    await file.makePublic();
+    console.log(`✓ Made ${filename} public`);
+  } catch (error) {
+    console.error(`Error making ${filename} public:`, error);
     throw error;
   }
 }
@@ -125,6 +163,7 @@ async function listAllVideos() {
 
     console.log(`Found ${files.length} videos in Firebase Storage`);
 
+    const bucketName = firebaseBucket.name;
     const videos = await Promise.all(
       files
         .filter(file => file.name.endsWith('.mp4'))
@@ -132,7 +171,16 @@ async function listAllVideos() {
           try {
             const [metadata] = await file.getMetadata();
             const filename = file.name.replace('videos/', '');
-            const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/${file.name}`;
+            
+            // Generate public URL based on bucket format
+            let publicUrl;
+            if (bucketName.includes('.appspot.com')) {
+              publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
+            } else if (bucketName.includes('.firebasestorage.app')) {
+              publicUrl = `https://${bucketName}/videos/${filename}`;
+            } else {
+              publicUrl = `https://storage.googleapis.com/${bucketName}/videos/${filename}`;
+            }
             
             return {
               filename,
@@ -183,6 +231,7 @@ module.exports = {
   uploadVideo,
   deleteVideo,
   listAllVideos,
+  makeVideoPublic,
   initializeFirebase, // Export for testing
 };
 

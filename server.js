@@ -412,6 +412,30 @@ app.get('/api/video-file/:fileId', async (req, res) => {
   }
 });
 
+// API endpoint to make a video public (for fixing access issues)
+app.post('/api/firebase-videos/:filename/make-public', async (req, res) => {
+  log(`=== Making video public: ${req.params.filename} ===`);
+  try {
+    if (!firebaseStorage) {
+      return res.status(503).json({
+        error: 'Firebase Storage not available'
+      });
+    }
+
+    await firebaseStorage.makeVideoPublic(req.params.filename);
+    
+    res.json({
+      success: true,
+      message: `Video ${req.params.filename} is now public`
+    });
+  } catch (error) {
+    log('Error making video public:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to make video public'
+    });
+  }
+});
+
 // API endpoint to list all videos from Firebase Storage
 app.get('/api/firebase-videos', async (req, res) => {
   log('=== Fetching all videos from Firebase Storage ===');
