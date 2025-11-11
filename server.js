@@ -412,6 +412,34 @@ app.get('/api/video-file/:fileId', async (req, res) => {
   }
 });
 
+// API endpoint to list all videos from Firebase Storage
+app.get('/api/firebase-videos', async (req, res) => {
+  log('=== Fetching all videos from Firebase Storage ===');
+  try {
+    if (!firebaseStorage) {
+      return res.status(503).json({
+        error: 'Firebase Storage not available',
+        videos: []
+      });
+    }
+
+    const videos = await firebaseStorage.listAllVideos();
+    log(`Found ${videos.length} videos in Firebase Storage`);
+    
+    res.json({
+      success: true,
+      videos: videos,
+      count: videos.length
+    });
+  } catch (error) {
+    log('Error fetching videos from Firebase:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to fetch videos from Firebase',
+      videos: []
+    });
+  }
+});
+
 // API endpoint to check Firebase configuration (for debugging)
 app.get('/api/firebase-status', async (req, res) => {
   try {

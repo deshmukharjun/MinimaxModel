@@ -3,15 +3,74 @@ import { getHistory, clearHistory } from '../utils/history'
 
 export default function History() {
   const [history, setHistory] = useState([])
+  const [firebaseVideos, setFirebaseVideos] = useState([])
   const [selectedVideo, setSelectedVideo] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadHistory()
+    loadFirebaseVideos()
   }, [])
 
   const loadHistory = () => {
     const saved = getHistory()
     setHistory(saved)
+  }
+
+  const loadFirebaseVideos = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/firebase-videos')
+      const data = await response.json()
+      
+      if (data.success && data.videos) {
+        // Convert Firebase videos to history format
+        const formattedVideos = data.videos.map(video => ({
+          taskId: video.taskId,
+          videoUrl: video.url,
+          localVideoUrl: video.url, // Firebase URL is the main URL
+          filename: video.filename,
+          createdAt: video.timeCreated || video.updated,
+          isFromFirebase: true,
+          // Try to match with local history for additional metadata
+          ...(history.find(h => h.taskId === video.taskId) || {}),
+        }))
+        
+        setFirebaseVideos(formattedVideos)
+        console.log(`Loaded ${formattedVideos.length} videos from Firebase Storage`)
+      }
+    } catch (error) {
+      console.error('Error loading Firebase videos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Combine local history and Firebase videos, removing duplicates
+  const allVideos = () => {
+    const combined = [...history]
+    
+    // Add Firebase videos that aren't already in local history
+    firebaseVideos.forEach(firebaseVideo => {
+      const exists = combined.find(v => v.taskId === firebaseVideo.taskId)
+      if (!exists) {
+        combined.push(firebaseVideo)
+      } else {
+        // Update existing entry with Firebase URL if it doesn't have one
+        const index = combined.findIndex(v => v.taskId === firebaseVideo.taskId)
+        if (index !== -1 && !combined[index].localVideoUrl) {
+          combined[index].localVideoUrl = firebaseVideo.url
+          combined[index].videoUrl = firebaseVideo.url
+        }
+      }
+    })
+    
+    // Sort by creation date (newest first)
+    return combined.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0)
+      const dateB = new Date(b.createdAt || 0)
+      return dateB - dateA
+    })
   }
 
   const handleClearHistory = () => {
@@ -33,7 +92,24 @@ export default function History() {
     })
   }
 
-  if (history.length === 0) {
+  const allVideosList = allVideos()
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="card text-center py-12">
+          <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">Loading Videos...</h3>
+          <p className="text-gray-500">Fetching videos from Firebase Storage</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (allVideosList.length === 0) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="card text-center py-12">
@@ -53,19 +129,38 @@ export default function History() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-800">Generation History</h2>
-          <p className="text-gray-500 mt-1">{history.length} video{history.length !== 1 ? 's' : ''} generated</p>
+          <p className="text-gray-500 mt-1">
+            {allVideosList.length} video{allVideosList.length !== 1 ? 's' : ''} total
+            {firebaseVideos.length > 0 && (
+              <span className="ml-2 text-blue-600">
+                ({firebaseVideos.length} from Firebase Storage)
+              </span>
+            )}
+          </p>
         </div>
-        <button
-          onClick={handleClearHistory}
-          className="btn-secondary text-red-600 border-red-600 hover:bg-red-50"
-        >
-          Clear History
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={loadFirebaseVideos}
+            className="btn-secondary inline-flex items-center space-x-2"
+            title="Refresh videos from Firebase"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={handleClearHistory}
+            className="btn-secondary text-red-600 border-red-600 hover:bg-red-50"
+          >
+            Clear Local History
+          </button>
+        </div>
       </div>
 
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {history.map((item, index) => (
+        {allVideosList.map((item, index) => (
           <div
             key={item.taskId || index}
             className="card cursor-pointer hover:scale-105 transition-transform duration-200"
@@ -87,13 +182,18 @@ export default function History() {
                 </div>
               )}
               <div className="absolute top-2 right-2 flex flex-col items-end space-y-1">
+                {item.isFromFirebase && (
+                  <div className="bg-green-600/80 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                    Firebase
+                  </div>
+                )}
                 {item.mode && (
                   <div className="bg-blue-600/80 text-white px-2 py-1 rounded-lg text-xs font-semibold">
                     {item.mode.replace(/-/g, ' ')}
                   </div>
                 )}
                 <div className="bg-black/70 text-white px-2 py-1 rounded-lg text-xs font-semibold">
-                  {item.model}
+                  {item.model || 'Unknown'}
                 </div>
               </div>
             </div>

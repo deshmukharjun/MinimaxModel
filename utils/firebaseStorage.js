@@ -107,6 +107,59 @@ async function uploadVideo(videoBuffer, filename) {
 }
 
 /**
+ * List all videos from Firebase Storage
+ * @returns {Promise<Array>} Array of video objects with metadata
+ */
+async function listAllVideos() {
+  try {
+    const firebaseBucket = initializeFirebase();
+    
+    if (!firebaseBucket) {
+      throw new Error('Firebase Storage not initialized');
+    }
+
+    console.log('Listing all videos from Firebase Storage...');
+    const [files] = await firebaseBucket.getFiles({
+      prefix: 'videos/',
+    });
+
+    console.log(`Found ${files.length} videos in Firebase Storage`);
+
+    const videos = await Promise.all(
+      files
+        .filter(file => file.name.endsWith('.mp4'))
+        .map(async (file) => {
+          try {
+            const [metadata] = await file.getMetadata();
+            const filename = file.name.replace('videos/', '');
+            const publicUrl = `https://storage.googleapis.com/${firebaseBucket.name}/${file.name}`;
+            
+            return {
+              filename,
+              url: publicUrl,
+              size: metadata.size,
+              contentType: metadata.contentType,
+              timeCreated: metadata.timeCreated,
+              updated: metadata.updated,
+              // Extract task ID from filename if it's in the format: taskId.mp4
+              taskId: filename.replace('.mp4', ''),
+            };
+          } catch (error) {
+            console.error(`Error getting metadata for ${file.name}:`, error);
+            return null;
+          }
+        })
+    );
+
+    // Filter out null values
+    return videos.filter(video => video !== null);
+  } catch (error) {
+    console.error('Error listing videos from Firebase:', error);
+    throw error;
+  }
+}
+
+/**
  * Delete video from Firebase Storage
  * @param {string} filename - Filename to delete
  */
@@ -129,6 +182,7 @@ async function deleteVideo(filename) {
 module.exports = {
   uploadVideo,
   deleteVideo,
+  listAllVideos,
   initializeFirebase, // Export for testing
 };
 
